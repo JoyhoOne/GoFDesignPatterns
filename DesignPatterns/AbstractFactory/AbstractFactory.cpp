@@ -9,7 +9,9 @@ using namespace std;
 #define HPUX "HPUX"
 #define SUNOS "SunOS"
 
-#define prototype
+//#define prototype
+//#define product
+#define upgrade_product
 
 #if defined(general) || defined(singleton)
 class Scanner {
@@ -196,7 +198,145 @@ protected:
 CompilerFactory* CompilerFactory::pInstance_ = 0;
 #endif
 
+#if defined(product)
+class Product {
+public :
+    virtual ~Product() = 0;
+};
+
+Product::~Product() {}
+
+class HPScanner : public Product {};
+class HPParser : public Product {};
+class HPCodeGenerator : public Product {};
+class HPOptimizer : public Product {};
+class HPErrorHandler : public Product {};
+
+class SunScanner : public Product {};
+class SunParser : public Product {};
+class SunCodeGenerator : public Product {};
+class SunOptimizer : public Product {};
+class SunErrorHandler : public Product {};
+
+class CompilerFactory {
+public:
+    virtual Product* CreateProduct(int type) = 0;
+};
+
+#define SCANNER 1
+#define PARSER 2
+#define CODEGENERATOR 3
+#define OPTIMIZER 4
+#define ERRORHANDLER 5
+
+class HPCompilerFactory : public CompilerFactory {
+public :
+    Product* CreateProduct(int type) {
+        switch (type) {
+            case SCANNER: return new HPScanner;
+            case PARSER: return new HPParser;
+            case CODEGENERATOR: return new HPCodeGenerator;
+            case OPTIMIZER: return new HPOptimizer;
+            case ERRORHANDLER: return new HPErrorHandler;
+        }
+    }
+};
+
+class SunCompilerFactory : public CompilerFactory {
+public:
+    Product* CreateProduct(int type) {
+        switch (type) {
+        case SCANNER: return new SunScanner;
+        case PARSER: return new SunParser;
+        case CODEGENERATOR: return new SunCodeGenerator;
+        case OPTIMIZER: return new SunOptimizer;
+        case ERRORHANDLER: return new SunErrorHandler;
+        }
+    }
+};
+
+#endif
+
+#if defined(upgrade_product)
+
+class Product {
+public :
+    virtual Product* Clone() = 0;
+};
+
+class HPScanner : public Product {
+public:
+    Product* Clone() { return new HPScanner(*this); }
+};
+
+class HPParser : public Product {
+public:
+    Product* Clone() { return new HPParser(*this); }
+};
+
+class HPCodeGenerator : public Product {
+public:
+    Product* Clone() { return new HPCodeGenerator(*this); }
+};
+
+class HPOptimizer : public Product {
+public:
+    Product* Clone() { return new HPOptimizer(*this); }
+};
+
+class SunScanner : public Product {
+public:
+    Product* Clone() { return new SunScanner(*this); }
+};
+
+class SunParser : public Product {
+public:
+    Product* Clone() { return new SunParser(*this); }
+};
+
+class SunCodeGenerator : public Product {
+public:
+    Product* Clone() { return new SunCodeGenerator(*this); }
+};
+
+class SunOptimizer : public Product {
+public:
+    Product* Clone() { return new SunOptimizer(*this); }
+};
+
+class HPErrorHandler : public Product {
+public :
+    Product* Clone() { return new HPErrorHandler(*this); }
+};
+
+class SunErrorHandler : public Product {
+public:
+    Product* Clone() { return new SunErrorHandler(*this); }
+};
+
+class CompilerFactory {
+public :
+    virtual Product* CreateProduct(Product* p) = 0;
+};
+
+class HPCompilerFactory : public CompilerFactory {
+public :
+    Product* CreateProduct(Product* p) {
+        return p->Clone();
+    }
+};
+
+class SunCompilerFactory : public CompilerFactory {
+public:
+    Product* CreateProduct(Product* p) {
+        return p->Clone();
+    }
+};
+
+#endif
+
 CompilerFactory* pFactory;
+
 
 int main()
 {
@@ -231,6 +371,47 @@ int main()
     Parser* pParaser = pFactory->CreateParser();
     CodeGenerator* pCodeGeneratory = pFactory->CreateCodeGenerator();
     Optimizer* pOptimizer = pFactory->CreateOptimizer();
+#endif
+
+#ifdef product
+
+    pFactory = new HPCompilerFactory;
+    //pFactory = new SunCompilerFactory;
+
+    Product* pScanner = pFactory->CreateProduct(SCANNER);
+    Product* pParser = pFactory->CreateProduct(PARSER);
+    Product* pCodeGenerator = pFactory->CreateProduct(CODEGENERATOR);
+    Product* pOptimizer = pFactory->CreateProduct(OPTIMIZER);
+    //Product* pErrorHandler = pFactory->CreateProduct(ERRORHANDLER);
+
+#endif
+
+#ifdef upgrade_product
+    Product* pScanner, * pParser, * pCodeGenerator, * pOptimizer;
+    Product* pErrorHandler;
+
+    pScanner = new HPScanner;
+    pParser = new HPParser;
+    pCodeGenerator = new HPCodeGenerator;
+    pOptimizer = new HPOptimizer;
+    pErrorHandler = new HPErrorHandler;
+
+    pFactory = new HPCompilerFactory;
+
+    //pScanner = new SunScanner;
+    //pParser = new SunParser;
+    //pCodeGenerator = new SunCodeGenerator;
+    //pOptimizer = new SunOptimizer;
+    //pErrorHandler = new SunErrorHandler;
+
+    //pFactory = new SunCompilerFactory;
+
+    Product* pNewScanner = pFactory->CreateProduct(pScanner);
+    Product* pNewParser = pFactory->CreateProduct(pParser);
+    Product* pNewCodeGenerator = pFactory->CreateProduct(pCodeGenerator);
+    Product* pNewOptimizer = pFactory->CreateProduct(pOptimizer);
+    Product* pNewErrorHandler = pFactory->CreateProduct(pErrorHandler);
+
 #endif
 
 }
